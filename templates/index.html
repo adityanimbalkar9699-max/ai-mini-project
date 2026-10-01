@@ -1,0 +1,1746 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraMed Clinical AI // Clinical Decision Support System</title>
+    <!-- Fonts: Inter & JetBrains Mono for a precision engineering feel -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS v4 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        :root {
+            /* Restrained Silicon Valley Clinical Palette */
+            --bg-base: #070d1e;
+            --surface-panel: rgba(10, 18, 38, 0.52);
+            --surface-elevated: rgba(14, 25, 52, 0.65);
+            --surface-subtle: rgba(255, 255, 255, 0.08);
+            --border-hairline: rgba(255, 255, 255, 0.18);
+            --border-hover: rgba(56, 189, 248, 0.5);
+            --border-focus: rgba(56, 189, 248, 0.75);
+            
+            /* Restrained Clinical Accents */
+            --clinical-teal: #14B8A6;
+            --clinical-cyan: #0EA5E9;
+            --clinical-blue: #38BDF8;
+            --clinical-amber: #F59E0B;
+            --clinical-rose: #F43F5E;
+            /* Dynamic Wallpaper Variable */
+            --app-bg-url: url('/images/medical-bg.jpg');
+        }
+
+        /* 
+         * TOP-LEVEL APPLICATION SHELL & BACKGROUND
+         * Background and grid are isolated on body::before and body::after with pointer-events: none.
+         * All interactive content is placed at z-index: 10 with pointer-events: auto.
+         */
+        html {
+            min-height: 100%;
+            background-color: #030712;
+        }
+
+        body {
+            min-height: 100vh;
+            color: #F8FAFC;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            background-color: #030712;
+            position: relative;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Fixed Background Layer - completely isolated, cannot intercept clicks */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none !important;
+            background-image: 
+                radial-gradient(circle at 50% 12%, rgba(14, 165, 233, 0.16) 0%, transparent 65%),
+                linear-gradient(rgba(3, 7, 18, 0.72), rgba(3, 7, 18, 0.88)),
+                var(--app-bg-url);
+            background-position: center top;
+            background-size: cover;
+            background-repeat: no-repeat;
+            will-change: transform;
+        }
+
+        /* Fixed Grid Layer - completely isolated, cannot intercept clicks */
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none !important;
+            background-image:
+                linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+            background-size: 36px 36px;
+            opacity: 0.6;
+        }
+
+        /* Interactive App Content Layer */
+        .app-shell, #app-shell, header, main, footer {
+            position: relative;
+            z-index: 10;
+            pointer-events: auto;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Guarantee all clickable elements receive user interactions */
+        button, a, input, select, label, [role="button"], .btn-saas-primary, .btn-saas-secondary {
+            pointer-events: auto !important;
+            cursor: pointer;
+        }
+
+        /* Modal safety: zero interference when closed */
+        #viva-modal {
+            display: none !important;
+            pointer-events: none !important;
+        }
+        #viva-modal.active {
+            display: flex !important;
+            pointer-events: auto !important;
+        }
+
+        /* REFINED SILICON VALLEY GLASSMORPHISM PANELS */
+        .glass-panel {
+            background: var(--surface-panel);
+            backdrop-filter: blur(18px) saturate(170%);
+            -webkit-backdrop-filter: blur(18px) saturate(170%);
+            border: 1px solid var(--border-hairline);
+            border-radius: 0.875rem; /* 14px */
+            box-shadow:
+                0 8px 32px 0 rgba(0, 0, 0, 0.35),
+                inset 0 1px 1px rgba(255, 255, 255, 0.22);
+            transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                        box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                        transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(255, 255, 255, 0.28);
+        }
+
+        .glass-panel-interactive:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-1.5px);
+            box-shadow:
+                0 16px 40px 0 rgba(0, 0, 0, 0.45),
+                0 0 20px -2px rgba(14, 165, 233, 0.25),
+                inset 0 1px 1px rgba(255, 255, 255, 0.3);
+        }
+
+        /* Inner Micro-Surfaces */
+        .surface-subtle {
+            background: var(--surface-subtle);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 0.625rem; /* 10px */
+            transition: all 0.18s ease;
+        }
+
+        .surface-subtle:hover {
+            background: rgba(255, 255, 255, 0.055);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        /* Refined SaaS Button Styles */
+        .btn-saas-primary {
+            background: linear-gradient(180deg, #0EA5E9 0%, #0284C7 100%);
+            color: #FFFFFF;
+            font-weight: 600;
+            font-size: 0.8125rem; /* 13px */
+            line-height: 1.25rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem; /* 8px */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(14, 165, 233, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.375rem;
+            transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+            user-select: none;
+        }
+
+        .btn-saas-primary:hover {
+            background: linear-gradient(180deg, #38BDF8 0%, #0EA5E9 100%);
+            border-color: rgba(255, 255, 255, 0.35);
+            box-shadow: 0 4px 16px rgba(14, 165, 233, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+            transform: translateY(-0.5px);
+        }
+
+        .btn-saas-primary:active {
+            transform: scale(0.985);
+            filter: brightness(0.95);
+        }
+
+        .btn-saas-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: #E2E8F0;
+            font-weight: 500;
+            font-size: 0.8125rem;
+            padding: 0.45rem 0.875rem;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.375rem;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+
+        .btn-saas-secondary:hover {
+            background: rgba(255, 255, 255, 0.09);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #FFFFFF;
+        }
+
+        .btn-saas-secondary:active {
+            transform: scale(0.985);
+        }
+
+        /* Pill Badges */
+        .badge-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6875rem; /* 11px */
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+
+        /* Custom Restrained Scrollbar */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(6, 9, 19, 0.4);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(14, 165, 233, 0.4);
+        }
+
+        /* Print Layout Rules */
+        @media print {
+            body {
+                background: #FFFFFF !important;
+                color: #000000 !important;
+            }
+            .no-print, header, footer, .bg-canvas {
+                display: none !important;
+            }
+            .glass-panel {
+                border: 1px solid #CCCCCC !important;
+                box-shadow: none !important;
+                background: #FFFFFF !important;
+                color: #000000 !important;
+            }
+            #print-report-container {
+                display: block !important;
+            }
+        }
+    </style>
+</head>
+<body class="selection:bg-sky-500 selection:text-black min-h-screen">
+
+    <!-- MAIN APP SHELL WRAPPER -->
+    <div id="app-shell" class="app-shell relative z-10 w-full min-h-screen">
+
+    <!-- SAAS PRODUCT HEADER -->
+    <header class="no-print fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-slate-950/40 border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+            <!-- Brand & Verified Core Indicator -->
+            <div class="flex items-center gap-3">
+                <div class="w-7 h-7 rounded-lg bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span class="font-semibold text-white tracking-tight text-sm sm:text-base">AuraMed</span>
+                    <span class="text-xs text-slate-400 font-medium hidden sm:inline">Clinical AI</span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-slate-300">CDSS v2.5</span>
+                </div>
+            </div>
+
+            <!-- Central System Nominal Telemetry -->
+            <div class="hidden md:flex items-center gap-5 text-xs font-mono text-slate-400 border-x border-white/[0.08] px-5 h-full">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    <span class="text-slate-200">System Nominal</span>
+                </div>
+                <div>
+                    <span class="text-slate-500">Latency:</span>
+                    <span class="text-slate-300 font-medium ml-1" id="telemetry-latency">0.8 ms</span>
+                </div>
+                <div>
+                    <span class="text-slate-500">Knowledge:</span>
+                    <span class="text-sky-400 font-medium ml-1" id="telemetry-rules">12 Verified Rules</span>
+                </div>
+            </div>
+
+            <!-- SaaS Action Controls -->
+            <div class="flex items-center gap-2">
+                <!-- Wallpaper Switcher (Muted & Clean) -->
+                <button onclick="switchWallpaper()" title="Switch atmospheric background image" class="btn-saas-secondary text-xs py-1.5 px-2.5">
+                    <svg class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                    <span id="wallpaper-label" class="hidden lg:inline text-[11px] font-mono">Atmosphere</span>
+                </button>
+
+                <!-- Sound Toggle -->
+                <button id="sound-btn" onclick="toggleSound()" title="Toggle clinical haptic cues" class="btn-saas-secondary text-xs py-1.5 px-2">
+                    <span id="sound-icon" class="text-xs">🔊</span>
+                </button>
+
+                <!-- Academic Viva Center Button -->
+                <button onclick="openVivaModal()" class="btn-saas-secondary text-xs py-1.5 px-2.5 text-sky-300 border-sky-500/30 hover:border-sky-500/50">
+                    <span class="text-xs">🎓</span>
+                    <span class="hidden sm:inline text-[11px] font-mono">Viva Defense</span>
+                </button>
+
+                <!-- Clinical Report Generator Button -->
+                <button onclick="triggerPrintReport()" class="btn-saas-primary text-xs py-1.5 px-3">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                    <span class="text-[11px] font-semibold">Clinical Report</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN PRODUCT WORKBENCH -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-20 flex flex-col gap-6">
+
+        <!-- PRODUCT HERO SECTION WITH VISIBLE HOLOGRAPHIC MEDICAL VIEWPORT -->
+        <section class="no-print pt-2 pb-1">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center border-b border-white/[0.08] pb-6">
+                <!-- Left: Headline & Telemetry Summary -->
+                <div class="lg:col-span-7 flex flex-col gap-3">
+                    <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-mono w-fit">
+                        <span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse"></span>
+                        Clinical Decision Support Core // Symbolic Inference
+                    </div>
+                    <h1 class="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-white leading-tight">
+                        Deterministic Medical Intelligence Platform
+                    </h1>
+                    <p class="text-slate-400 text-xs sm:text-sm leading-relaxed">
+                        Evaluates observed patient symptom clusters into verified differential diagnoses through dual-engine symbolic logic (Modus Ponens). Zero hallucination. 100% explainable audit trails.
+                    </p>
+
+                    <!-- Structured KPI Metrics Row -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-xs text-slate-300 pt-1">
+                        <div class="surface-subtle p-2.5 flex flex-col">
+                            <span class="text-[10px] text-slate-500 uppercase">Reasoning Core</span>
+                            <span class="text-white font-medium mt-0.5">Modus Ponens</span>
+                        </div>
+                        <div class="surface-subtle p-2.5 flex flex-col">
+                            <span class="text-[10px] text-slate-500 uppercase">Rule Base</span>
+                            <span class="text-sky-400 font-medium mt-0.5">R01–R12 Rules</span>
+                        </div>
+                        <div class="surface-subtle p-2.5 flex flex-col">
+                            <span class="text-[10px] text-slate-500 uppercase">Explainability</span>
+                            <span class="text-emerald-400 font-medium mt-0.5">100% Deterministic</span>
+                        </div>
+                        <div class="surface-subtle p-2.5 flex flex-col">
+                            <span class="text-[10px] text-slate-500 uppercase">Verification</span>
+                            <span class="text-slate-200 font-medium mt-0.5">5/5 Verified</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: VISIBLE HOLOGRAPHIC MEDICAL STAGE SHOWCASING THE IMAGE -->
+                <div class="lg:col-span-5 relative">
+                    <div class="relative rounded-xl overflow-hidden border border-sky-400/40 shadow-2xl bg-slate-900/30 backdrop-blur-md group">
+                        <!-- Direct Visible Image Rendering -->
+                        <img id="hero-model-img" src="/images/medical-bg.jpg" alt="Clinical Holographic Model Scan" class="w-full h-44 sm:h-52 object-cover object-center filter contrast-110 brightness-100 group-hover:scale-105 transition-transform duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent pointer-events-none"></div>
+                        
+                        <!-- Top HUD Overlay Badges -->
+                        <div class="absolute top-2.5 left-2.5 flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/40 backdrop-blur-md border border-sky-400/30 text-[10px] font-mono text-sky-300">
+                            <span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping"></span>
+                            <span class="font-medium">HOLOGRAPHIC CLINICAL STAGE</span>
+                        </div>
+                        <div class="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-md bg-black/40 backdrop-blur-md border border-white/15 text-[10px] font-mono text-slate-300">
+                            Telemetry Active
+                        </div>
+
+                        <!-- Bottom HUD Telemetry Status -->
+                        <div class="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between text-[10px] font-mono text-slate-200 px-3 py-2 rounded-lg bg-slate-950/50 backdrop-blur-md border border-white/15">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                <span class="text-white font-medium">Neural & Anatomical Scan</span>
+                            </div>
+                            <span class="text-sky-300 font-semibold">100% Signal Integrity</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 1-CLICK CLINICAL CASE STUDY PRESETS (Examiner Demos) -->
+        <section class="no-print flex flex-col gap-2">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono text-slate-300 font-semibold uppercase tracking-wider">Clinical Scenarios & Benchmark Presets</span>
+                    <span class="text-[11px] text-slate-500 font-mono">(Instant Examiner Viva Demos)</span>
+                </div>
+                <span class="text-[11px] text-slate-400 font-mono">1-Click Auto Populate & Run</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5" id="case-presets-grid">
+                <!-- Populated by JS -->
+            </div>
+        </section>
+
+        <!-- PATIENT TELEMETRY & CLINICAL VITALS INTAKE STRIP -->
+        <section class="no-print glass-panel p-4 flex flex-col gap-3">
+            <div class="flex items-center justify-between border-b border-white/[0.08] pb-2.5">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                    </svg>
+                    <span class="text-xs font-mono font-semibold uppercase tracking-wider text-slate-200">Patient Telemetry & Vital Signs Intake</span>
+                </div>
+                <div class="text-[11px] font-mono text-slate-400">
+                    Real-time physiological surveillance
+                </div>
+            </div>
+
+            <!-- Vitals Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 font-mono text-xs">
+                <div class="surface-subtle p-2.5 flex flex-col gap-1">
+                    <span class="text-[10px] text-slate-500 uppercase">Age / Gender</span>
+                    <div class="flex items-center gap-1.5 text-white font-medium">
+                        <input id="patient-age" type="number" value="45" min="1" max="120" class="w-12 bg-transparent border-b border-white/20 outline-none text-sky-400 font-semibold">
+                        <span class="text-slate-400">yrs</span>
+                        <select id="patient-gender" class="bg-transparent border-b border-white/20 outline-none text-slate-300 text-xs ml-1">
+                            <option value="Male" class="bg-[#0D1220]">M</option>
+                            <option value="Female" class="bg-[#0D1220]">F</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="surface-subtle p-2.5 flex flex-col gap-1">
+                    <span class="text-[10px] text-slate-500 uppercase">Blood Pressure</span>
+                    <div class="flex items-center gap-1 text-white font-medium">
+                        <input id="patient-bp" type="text" value="120/80" placeholder="120/80" onchange="evaluateTriage()" class="w-20 bg-transparent border-b border-white/20 outline-none text-sky-400 font-semibold">
+                        <span class="text-[10px] text-slate-400">mmHg</span>
+                    </div>
+                </div>
+
+                <div class="surface-subtle p-2.5 flex flex-col gap-1">
+                    <span class="text-[10px] text-slate-500 uppercase">Heart Rate</span>
+                    <div class="flex items-center gap-1 text-white font-medium">
+                        <input id="patient-hr" type="number" value="76" min="30" max="220" onchange="evaluateTriage()" class="w-14 bg-transparent border-b border-white/20 outline-none text-sky-400 font-semibold">
+                        <span class="text-[10px] text-slate-400">BPM</span>
+                    </div>
+                </div>
+
+                <div class="surface-subtle p-2.5 flex flex-col gap-1">
+                    <span class="text-[10px] text-slate-500 uppercase">Pulse Oximetry (SpO2)</span>
+                    <div class="flex items-center gap-1 font-medium" id="spo2-container">
+                        <input id="patient-spo2" type="number" value="98" min="50" max="100" onchange="evaluateTriage()" class="w-14 bg-transparent border-b border-white/20 outline-none text-emerald-400 font-semibold">
+                        <span class="text-[10px] text-slate-400">%</span>
+                    </div>
+                </div>
+
+                <div class="surface-subtle p-2.5 flex flex-col gap-1">
+                    <span class="text-[10px] text-slate-500 uppercase">Body Temp</span>
+                    <div class="flex items-center gap-1 text-white font-medium">
+                        <input id="patient-temp" type="number" step="0.1" value="37.0" min="30" max="43" onchange="evaluateTriage()" class="w-14 bg-transparent border-b border-white/20 outline-none text-sky-400 font-semibold">
+                        <span class="text-[10px] text-slate-400">°C</span>
+                    </div>
+                </div>
+
+                <div class="surface-subtle p-2.5 flex flex-col justify-between">
+                    <span class="text-[10px] text-slate-500 uppercase">Triage Severity</span>
+                    <div id="triage-status-badge" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-center">
+                        NORMAL VITALS
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real-time Clinical Triage Alert Banner -->
+            <div id="triage-alert-box" class="hidden p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 font-mono text-xs flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-rose-400 font-semibold text-xs">⚠️ CLINICAL RED FLAG:</span>
+                    <span id="triage-alert-text">Abnormal parameters detected in patient intake.</span>
+                </div>
+                <span class="text-[10px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded font-medium uppercase tracking-wider">STAT Intervention</span>
+            </div>
+        </section>
+
+        <!-- DUAL INFERENCE CLINICAL WORKBENCH -->
+        <section id="diagnosis" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+            <!-- LEFT COLUMN: SYMPTOM SELECTOR & SYSTEM TAXONOMY (COL 7) -->
+            <div class="lg:col-span-7 flex flex-col gap-5">
+
+                <div class="glass-panel p-5 flex flex-col gap-4">
+                    <!-- Section Header -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.08] pb-3">
+                        <div>
+                            <h2 class="text-base font-semibold text-white tracking-tight flex items-center gap-2">
+                                <span>Active Clinical Evidence Checklist</span>
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-0.5">Select observed patient symptoms to assert into Working Memory.</p>
+                        </div>
+                        <!-- Action Buttons -->
+                        <div class="flex items-center gap-2 text-xs font-mono">
+                            <button onclick="selectAllSymptoms()" class="btn-saas-secondary text-[11px] py-1 px-2.5">Select All</button>
+                            <button onclick="clearAllSymptoms()" class="btn-saas-secondary text-[11px] py-1 px-2.5 text-rose-400 hover:text-rose-300 border-rose-500/20">Reset</button>
+                        </div>
+                    </div>
+
+                    <!-- Search & Category Filters -->
+                    <div class="flex flex-col gap-2.5">
+                        <div class="relative">
+                            <input type="text" id="symptom-search" placeholder="Filter symptoms (e.g. cough, fever, chest pain, rash)..." oninput="filterSymptoms()" class="w-full surface-subtle px-3.5 py-2 text-xs text-white placeholder:text-slate-500 outline-none focus:border-sky-500/50 transition">
+                            <span class="absolute right-3 top-2 text-xs text-slate-500">🔍</span>
+                        </div>
+
+                        <!-- Organ System Pills -->
+                        <div class="flex flex-wrap gap-1.5 text-[11px] font-mono" id="system-category-pills">
+                            <button class="px-2.5 py-1 rounded-md bg-sky-500/15 text-sky-300 border border-sky-500/30 font-medium" onclick="filterByCategory('ALL')">All Systems</button>
+                            <button class="px-2.5 py-1 rounded-md surface-subtle text-slate-400 hover:text-slate-200" onclick="filterByCategory('Cardiovascular')">Cardiovascular</button>
+                            <button class="px-2.5 py-1 rounded-md surface-subtle text-slate-400 hover:text-slate-200" onclick="filterByCategory('Respiratory')">Respiratory</button>
+                            <button class="px-2.5 py-1 rounded-md surface-subtle text-slate-400 hover:text-slate-200" onclick="filterByCategory('Neurological')">Neurological</button>
+                            <button class="px-2.5 py-1 rounded-md surface-subtle text-slate-400 hover:text-slate-200" onclick="filterByCategory('Gastrointestinal')">Gastrointestinal</button>
+                            <button class="px-2.5 py-1 rounded-md surface-subtle text-slate-400 hover:text-slate-200" onclick="filterByCategory('Endocrine & Metabolic')">Endocrine</button>
+                            <button class="px-2.5 py-1 rounded-md surface-subtle text-slate-400 hover:text-slate-200" onclick="filterByCategory('Musculoskeletal')">Musculoskeletal</button>
+                        </div>
+                    </div>
+
+                    <!-- Symptoms Checklist Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[360px] overflow-y-auto pr-1" id="symptoms-grid">
+                        <!-- Populated by JavaScript -->
+                    </div>
+
+                    <!-- Active Count & Keyboard Shortcut Indicator -->
+                    <div class="flex items-center justify-between pt-3 border-t border-white/[0.08] font-mono text-xs text-slate-400">
+                        <div>
+                            <span class="text-sky-400 font-semibold" id="selected-count">0</span> of <span id="total-symptoms-count">24</span> symptoms asserted
+                        </div>
+                        <div class="text-[11px] text-slate-500">Shortcut: <kbd class="px-1.5 py-0.5 rounded bg-white/[0.08] text-slate-300">Ctrl+Enter</kbd> to Run</div>
+                    </div>
+
+                    <!-- STRATEGY SELECTOR & EXECUTION CONTROLS -->
+                    <div class="flex flex-col gap-3 pt-3 border-t border-white/[0.08]">
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <button id="tab-forward" onclick="setInferenceMode('forward')" class="p-3 rounded-lg border flex flex-col gap-0.5 text-left transition bg-sky-500/10 border-sky-500/35 text-sky-300">
+                                <span class="text-xs font-semibold font-mono uppercase">1. Forward Chaining</span>
+                                <span class="text-[11px] text-slate-400">Bottom-up data-driven synthesis to discover all differential diagnoses.</span>
+                            </button>
+
+                            <button id="tab-backward" onclick="setInferenceMode('backward')" class="p-3 rounded-lg border flex flex-col gap-0.5 text-left transition surface-subtle text-slate-400 hover:border-white/20">
+                                <span class="text-xs font-semibold font-mono uppercase">2. Backward Chaining</span>
+                                <span class="text-[11px] text-slate-400">Top-down goal prover to verify or refute a specific suspected hypothesis.</span>
+                            </button>
+                        </div>
+
+                        <!-- Target Disease Selector for Backward Chaining -->
+                        <div id="backward-goal-container" class="hidden flex flex-col gap-1.5 p-3 rounded-lg surface-subtle border-sky-500/25">
+                            <label class="text-xs font-mono font-medium text-sky-300 uppercase flex items-center justify-between">
+                                <span>🎯 Hypothesis Goal to Prove:</span>
+                                <span class="text-[10px] text-slate-500 font-normal">Select target condition</span>
+                            </label>
+                            <select id="target-disease-select" class="w-full bg-[#080D1A] border border-white/15 rounded-md p-2 text-xs text-white outline-none focus:border-sky-400 font-mono">
+                                <!-- Populated dynamically by JS -->
+                            </select>
+                        </div>
+
+                        <!-- Primary Execute Button -->
+                        <button id="execute-btn" onclick="triggerInference()" class="btn-saas-primary w-full py-2.5 text-xs">
+                            <span id="btn-icon">⚡</span>
+                            <span id="btn-text">Execute Forward Chaining Inference</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- INTERACTIVE SVG DECISION NETWORK GRAPH -->
+                <div class="glass-panel p-4 flex flex-col gap-2.5">
+                    <div class="flex items-center justify-between border-b border-white/[0.08] pb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-mono font-semibold uppercase tracking-wider text-slate-300">Symbolic Inference Decision Graph</span>
+                        </div>
+                        <span class="text-[11px] font-mono text-sky-400" id="graph-status">Awaiting Execution</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400">Visual mapping of antecedent premise evaluation to fired rule and consequent:</p>
+                    <div class="w-full surface-subtle p-2 overflow-hidden flex items-center justify-center min-h-[190px]" id="decision-graph-canvas">
+                        <svg id="network-svg" class="w-full h-48" viewBox="0 0 600 200">
+                            <!-- Populated dynamically by JS -->
+                            <text x="300" y="105" fill="#64748B" font-size="11" font-family="monospace" text-anchor="middle">Execute inference to render active premise-to-rule firing topology</text>
+                        </svg>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: RESULTS, DIFFERENTIAL DIAGNOSES & AUDIT TRAIL (COL 5) -->
+            <div class="lg:col-span-5 flex flex-col gap-5">
+
+                <!-- CLINICAL DIAGNOSTIC OUTPUT CARD -->
+                <div class="glass-panel p-5 flex flex-col gap-4">
+                    <div class="flex items-center justify-between border-b border-white/[0.08] pb-2.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-mono font-semibold uppercase tracking-wider text-slate-200">Clinical Diagnostic Output</span>
+                        </div>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-slate-400" id="result-mode-tag">FORWARD REASONING</span>
+                    </div>
+
+                    <!-- Placeholder State -->
+                    <div id="results-idle-state" class="py-14 text-center flex flex-col items-center justify-center gap-2.5 text-slate-500 font-mono text-xs">
+                        <div class="w-10 h-10 rounded-full surface-subtle flex items-center justify-center text-slate-400">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="8" x2="12" y2="12"/>
+                                <line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                        </div>
+                        <div>Select symptoms on the left to evaluate clinical production rules.</div>
+                    </div>
+
+                    <!-- Active Result State -->
+                    <div id="results-active-state" class="hidden flex flex-col gap-4">
+                        <!-- Primary Diagnosis Box -->
+                        <div id="primary-diag-card" class="p-3.5 rounded-lg surface-subtle border-sky-500/30 flex flex-col gap-2.5">
+                            <div class="flex items-start justify-between gap-2">
+                                <div>
+                                    <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider" id="diag-rank-label">PRIMARY DERIVED CONDITION</div>
+                                    <h3 class="text-lg font-bold text-white mt-0.5 tracking-tight" id="diag-title">Common Pneumonia</h3>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 font-medium" id="diag-rule-id">RULE R01</span>
+                                        <span class="text-[10px] font-mono text-slate-400" id="diag-icd">ICD-10: J18.9</span>
+                                        <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.06] text-slate-300" id="diag-category">Respiratory</span>
+                                    </div>
+                                </div>
+                                <span class="badge-status bg-amber-500/10 text-amber-400 border border-amber-500/25" id="diag-severity-badge">URGENT</span>
+                            </div>
+
+                            <!-- Confidence Match Progress -->
+                            <div class="flex flex-col gap-1 pt-2 border-t border-white/[0.08]">
+                                <div class="flex justify-between text-xs font-mono">
+                                    <span class="text-slate-400">Premise Match</span>
+                                    <span class="text-sky-400 font-medium" id="diag-match-percent">100.0% (4 / 4)</span>
+                                </div>
+                                <div class="w-full h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/[0.06]">
+                                    <div id="diag-match-bar" class="h-full bg-sky-400 transition-all duration-300" style="width: 100%;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Satisfied vs Missing Criteria -->
+                        <div class="grid grid-cols-1 gap-2.5 font-mono text-xs">
+                            <div class="surface-subtle p-3 flex flex-col gap-1.5">
+                                <span class="text-[10px] text-emerald-400 font-medium uppercase">✓ Satisfied Criteria:</span>
+                                <div class="flex flex-wrap gap-1.5" id="diag-satisfied-chips">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+
+                            <div class="surface-subtle p-3 flex flex-col gap-1.5">
+                                <span class="text-[10px] text-amber-400 font-medium uppercase">✗ Missing Evidence:</span>
+                                <div class="flex flex-wrap gap-1.5" id="diag-missing-chips">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recommended Diagnostic Lab Investigations -->
+                        <div class="surface-subtle p-3 flex flex-col gap-1 font-mono text-xs">
+                            <span class="text-[10px] text-sky-300 font-medium uppercase">🧪 Recommended Diagnostic Workup:</span>
+                            <div class="text-slate-300 text-[11px] leading-relaxed" id="diag-tests">
+                                Chest X-Ray (PA view), Sputum Culture, Complete Blood Count (CBC).
+                            </div>
+                        </div>
+
+                        <!-- Clinical Treatment Protocol -->
+                        <div class="surface-subtle p-3 flex flex-col gap-1 font-mono text-xs">
+                            <span class="text-[10px] text-emerald-400 font-medium uppercase">💊 Clinical Management Protocol:</span>
+                            <div class="text-slate-300 text-[11px] leading-relaxed" id="diag-treatment">
+                                Antibiotic regimen as prescribed, supplemental oxygen if SpO2 below 92%, hydration.
+                            </div>
+                        </div>
+
+                        <!-- Secondary Differential Diagnoses List -->
+                        <div class="flex flex-col gap-1.5 pt-2 border-t border-white/[0.08]">
+                            <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Competing Differential Candidates:</span>
+                            <div class="flex flex-col gap-1.5" id="differentials-list">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FORMAL AUDIT TRAIL LOG -->
+                <div class="glass-panel p-4 flex flex-col gap-2.5 font-mono text-xs">
+                    <div class="flex items-center justify-between border-b border-white/[0.08] pb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="font-semibold text-slate-300 uppercase tracking-wider text-[11px]">Symbolic Proof Trace // Audit Log</span>
+                        </div>
+                        <button onclick="copyAuditLog()" class="btn-saas-secondary text-[10px] py-0.5 px-2">Copy Log</button>
+                    </div>
+                    <div class="surface-subtle p-2.5 text-slate-300 text-[11px] space-y-1 max-h-52 overflow-y-auto leading-relaxed" id="audit-trace-box">
+                        <div class="text-slate-500">[Awaiting inference execution...]</div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- KNOWLEDGE BASE REPOSITORY (R01 - R12) -->
+        <section id="rules" class="no-print glass-panel p-5 flex flex-col gap-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.08] pb-3">
+                <div>
+                    <h2 class="text-base font-semibold text-white tracking-tight flex items-center gap-2">
+                        <span>Clinical Knowledge Repository ("Production Rules R01 — R12")</span>
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Deterministic Horn-clause production rules driving the inference engines.</p>
+                </div>
+                <div class="relative w-full sm:w-64">
+                    <input type="text" id="kb-search" placeholder="Search rules, ICD, symptoms..." oninput="searchKnowledgeBase()" class="w-full surface-subtle px-3 py-1.5 text-xs text-white placeholder:text-slate-500 outline-none focus:border-sky-400 font-mono">
+                    <span class="absolute right-2.5 top-2 text-xs text-slate-500">🔍</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" id="kb-rules-grid">
+                <!-- Populated by JS -->
+            </div>
+        </section>
+
+        <!-- INFERENCE VALIDATION LAB (AUTOMATED TEST SUITE) -->
+        <section id="testing" class="no-print glass-panel p-5 flex flex-col gap-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.08] pb-3">
+                <div>
+                    <h2 class="text-base font-semibold text-white tracking-tight flex items-center gap-2">
+                        <span>Inference Validation Lab (Automated Regression Tests)</span>
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Automated test harness evaluating 5 clinical test cases across both engines.</p>
+                </div>
+                <button onclick="runValidationSuite()" class="btn-saas-primary text-xs py-1.5 px-3">
+                    <span>▶</span> Run Validation Suite
+                </button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse font-mono text-xs">
+                    <thead>
+                        <tr class="border-b border-white/[0.08] text-slate-400 text-[11px]">
+                            <th class="py-2.5 px-3 uppercase font-medium">Test ID</th>
+                            <th class="py-2.5 px-3 uppercase font-medium">Strategy</th>
+                            <th class="py-2.5 px-3 uppercase font-medium">Input / Goal</th>
+                            <th class="py-2.5 px-3 uppercase font-medium">Expected</th>
+                            <th class="py-2.5 px-3 uppercase font-medium">Actual</th>
+                            <th class="py-2.5 px-3 uppercase font-medium">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="test-table-body" class="divide-y divide-white/[0.06] text-slate-300">
+                        <tr class="hover:bg-white/[0.02]">
+                            <td class="py-2.5 px-3 text-sky-400 font-semibold">TEST-01</td>
+                            <td class="py-2.5 px-3">Forward Chaining</td>
+                            <td class="py-2.5 px-3">fever, cough, fatigue, shortness_of_breath</td>
+                            <td class="py-2.5 px-3">Common Pneumonia</td>
+                            <td class="py-2.5 px-3 text-slate-400">Ready</td>
+                            <td class="py-2.5 px-3 text-slate-500 font-medium">PENDING</td>
+                        </tr>
+                        <tr class="hover:bg-white/[0.02]">
+                            <td class="py-2.5 px-3 text-sky-400 font-semibold">TEST-02</td>
+                            <td class="py-2.5 px-3">Forward Chaining</td>
+                            <td class="py-2.5 px-3">fever, headache, muscle_pain, fatigue</td>
+                            <td class="py-2.5 px-3">Viral Influenza (Flu)</td>
+                            <td class="py-2.5 px-3 text-slate-400">Ready</td>
+                            <td class="py-2.5 px-3 text-slate-500 font-medium">PENDING</td>
+                        </tr>
+                        <tr class="hover:bg-white/[0.02]">
+                            <td class="py-2.5 px-3 text-sky-400 font-semibold">TEST-03</td>
+                            <td class="py-2.5 px-3">Forward Chaining</td>
+                            <td class="py-2.5 px-3">fever, headache, stiff_neck, sensitivity_to_light</td>
+                            <td class="py-2.5 px-3">Meningitis</td>
+                            <td class="py-2.5 px-3 text-slate-400">Ready</td>
+                            <td class="py-2.5 px-3 text-slate-500 font-medium">PENDING</td>
+                        </tr>
+                        <tr class="hover:bg-white/[0.02]">
+                            <td class="py-2.5 px-3 text-sky-400 font-semibold">TEST-04</td>
+                            <td class="py-2.5 px-3">Backward Chaining</td>
+                            <td class="py-2.5 px-3">Target: Common Pneumonia (Full Symptoms)</td>
+                            <td class="py-2.5 px-3">Verified (100%)</td>
+                            <td class="py-2.5 px-3 text-slate-400">Ready</td>
+                            <td class="py-2.5 px-3 text-slate-500 font-medium">PENDING</td>
+                        </tr>
+                        <tr class="hover:bg-white/[0.02]">
+                            <td class="py-2.5 px-3 text-sky-400 font-semibold">TEST-05</td>
+                            <td class="py-2.5 px-3">Backward Chaining</td>
+                            <td class="py-2.5 px-3">Target: Dengue Fever (Partial: fever, headache)</td>
+                            <td class="py-2.5 px-3">Unverified (Missing Criteria)</td>
+                            <td class="py-2.5 px-3 text-slate-400">Ready</td>
+                            <td class="py-2.5 px-3 text-slate-500 font-medium">PENDING</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- SAAS FOOTER -->
+    <footer class="no-print border-t border-white/[0.08] py-8 text-center text-xs text-slate-500 font-mono">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div>
+                <span class="text-slate-300 font-medium">AURAMED CLINICAL AI</span> // Deterministic Clinical Decision Support Platform
+            </div>
+            <div class="text-[11px] text-slate-500">
+                Engineered with Python Flask, Symbolic Logic, & Modern Web Architecture
+            </div>
+        </div>
+    </footer>
+
+    <!-- MODAL: ACADEMIC VIVA & EXAMINER DEFENSE CENTER -->
+    <div id="viva-modal" style="display: none;" class="no-print fixed inset-0 z-50 bg-black/80 backdrop-blur-sm items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-3xl max-h-[85vh] overflow-y-auto p-5 flex flex-col gap-4 border-sky-500/40">
+            <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-xl">🎓</span>
+                    <div>
+                        <h3 class="text-sm font-semibold text-white">Academic Viva & Presentation Defense Guide</h3>
+                        <p class="text-[11px] text-sky-400 font-mono">Theoretical Foundations, Logic Formalisms, and Viva Q&A</p>
+                    </div>
+                </div>
+                <button onclick="closeVivaModal()" class="w-7 h-7 rounded-md surface-subtle text-slate-300 hover:text-white flex items-center justify-center">✕</button>
+            </div>
+
+            <!-- Content Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-xs">
+                <div class="surface-subtle p-3.5 flex flex-col gap-1.5">
+                    <span class="text-sky-300 font-semibold uppercase text-[10px]">01. Forward Chaining (Data-Driven)</span>
+                    <p class="text-slate-300 text-[11px] leading-relaxed">
+                        Starts with observed evidence (symptoms in Working Memory) and searches antecedent conditions. Evaluates rules via <strong>Modus Ponens</strong> ($P \rightarrow Q, P \vdash Q$), deriving new conclusions into Working Memory.
+                    </p>
+                    <span class="text-slate-500 text-[10px]">Application: Primary differential diagnosis screening.</span>
+                </div>
+
+                <div class="surface-subtle p-3.5 flex flex-col gap-1.5">
+                    <span class="text-emerald-300 font-semibold uppercase text-[10px]">02. Backward Chaining (Goal-Driven)</span>
+                    <p class="text-slate-300 text-[11px] leading-relaxed">
+                        Starts with a suspected hypothesis ($Q$) and queries the Knowledge Base recursively. Decomposes goal into subgoals (premises), proving hypothesis or isolating missing clinical evidence.
+                    </p>
+                    <span class="text-slate-500 text-[10px]">Application: Emergency rule-outs & hypothesis verification.</span>
+                </div>
+
+                <div class="surface-subtle p-3.5 flex flex-col gap-1.5">
+                    <span class="text-amber-300 font-semibold uppercase text-[10px]">Q: Conflict Resolution Strategy?</span>
+                    <p class="text-slate-300 text-[11px] leading-relaxed">
+                        Ranks rules by <em>Specificity</em> (highest proportion of satisfied premises) and <em>Refractoriness</em> (rules fired once do not refire in the same cycle).
+                    </p>
+                </div>
+
+                <div class="surface-subtle p-3.5 flex flex-col gap-1.5">
+                    <span class="text-amber-300 font-semibold uppercase text-[10px]">Q: Why Symbolic AI over LLMs?</span>
+                    <p class="text-slate-300 text-[11px] leading-relaxed">
+                        Medicine requires 100% auditability and zero hallucination risk. Every decision has a deterministic proof trail grounded in clinical guidelines.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Demo Sequence -->
+            <div class="surface-subtle p-3 flex flex-col gap-1 font-mono text-xs border-sky-500/30">
+                <span class="text-sky-300 font-semibold text-[10px] uppercase">Recommended 2-Minute Demonstration Order:</span>
+                <ol class="list-decimal list-inside space-y-0.5 text-slate-300 text-[11px]">
+                    <li>Click <strong>'Code Blue: Acute MI'</strong> preset to show emergency triage & chest pain workup.</li>
+                    <li>Toggle to <strong>'Backward Chaining'</strong> with partial symptoms to show missing evidence detection.</li>
+                    <li>Inspect the <strong>Decision Graph</strong> to demonstrate active premise-to-rule firing paths.</li>
+                    <li>Click <strong>'Run Validation Suite'</strong> to show 5/5 automated unit tests passing.</li>
+                    <li>Click <strong>'Clinical Report'</strong> to show formal hospital documentation.</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRINTABLE CLINICAL SUMMARY REPORT (Triggered on Print) -->
+    <div id="print-report-container" class="hidden p-8 font-mono text-xs text-black">
+        <div style="border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 20px;">
+            <h1 style="font-size: 18px; font-weight: bold; margin: 0;">AURAMED CLINICAL DECISION SUPPORT PLATFORM</h1>
+            <p style="margin: 4px 0 0 0; color: #555;">Official Clinical Evidence & Differential Diagnostic Report // Symbolic AI Inference</p>
+            <p style="margin: 4px 0 0 0; color: #555;">Generated: <span id="print-date"></span></p>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+            <h2 style="font-size: 13px; font-weight: bold; border-bottom: 1px solid #CCC; padding-bottom: 3px;">1. PATIENT TELEMETRY & VITAL SIGNS</h2>
+            <p id="print-vitals" style="margin: 6px 0;"></p>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+            <h2 style="font-size: 13px; font-weight: bold; border-bottom: 1px solid #CCC; padding-bottom: 3px;">2. OBSERVED CLINICAL SYMPTOMS</h2>
+            <p id="print-symptoms" style="margin: 6px 0;"></p>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+            <h2 style="font-size: 13px; font-weight: bold; border-bottom: 1px solid #CCC; padding-bottom: 3px;">3. DERIVED CLINICAL DIAGNOSES (DIFFERENTIAL)</h2>
+            <div id="print-diagnoses" style="margin: 6px 0;"></div>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+            <h2 style="font-size: 13px; font-weight: bold; border-bottom: 1px solid #CCC; padding-bottom: 3px;">4. SYMBOLIC REASONING PROOF AUDIT TRAIL</h2>
+            <div id="print-audit-trace" style="margin: 6px 0; font-size: 10px; background: #F5F5F5; padding: 8px; border: 1px solid #DDD;"></div>
+        </div>
+
+        <div style="margin-top: 24px; border-top: 1px solid #000; padding-top: 8px; font-size: 9px; color: #666;">
+            <strong>ACADEMIC EVALUATION DISCLAIMER:</strong> Developed solely for artificial intelligence coursework evaluation. Not intended for primary clinical diagnosis without licensed clinician validation.
+        </div>
+    </div>
+
+    <!-- CORE JAVASCRIPT LOGIC -->
+    <script>
+        // Global Application State
+        let ALL_SYMPTOMS = [];
+        let ALL_DISEASES = [];
+        let CATEGORIZED_SYMPTOMS = {};
+        let ALL_RULES = [];
+        let CASE_PRESETS = [];
+        let currentMode = 'forward'; // 'forward' | 'backward'
+        let currentCategoryFilter = 'ALL';
+        let isAudioEnabled = true;
+        let lastInferenceResults = null;
+
+        // --- Web Audio Synthesizer (Haptic Audio Feedback) ---
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (!isAudioEnabled) return;
+            try {
+                initAudio();
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'click') {
+                    osc.frequency.setValueAtTime(800, now);
+                    osc.frequency.exponentialRampToValueAtTime(400, now + 0.04);
+                    gain.gain.setValueAtTime(0.025, now);
+                    gain.gain.linearRampToValueAtTime(0.001, now + 0.04);
+                    osc.start(now);
+                    osc.stop(now + 0.04);
+                } else if (type === 'fire') {
+                    // Subtle clinical confirmation chime
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.06);
+                    osc.frequency.setValueAtTime(783.99, now + 0.12);
+                    gain.gain.setValueAtTime(0.035, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+                    osc.start(now);
+                    osc.stop(now + 0.28);
+                } else if (type === 'alert') {
+                    // Triage warning tone
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.setValueAtTime(330, now + 0.08);
+                    gain.gain.setValueAtTime(0.03, now);
+                    gain.gain.linearRampToValueAtTime(0.001, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                }
+            } catch (e) {
+                // AudioContext not allowed before user interaction
+            }
+        }
+
+        function toggleSound() {
+            isAudioEnabled = !isAudioEnabled;
+            const icon = document.getElementById('sound-icon');
+            const btn = document.getElementById('sound-btn');
+            if (isAudioEnabled) {
+                icon.innerText = '🔊';
+                btn.classList.remove('opacity-50');
+            } else {
+                icon.innerText = '🔇';
+                btn.classList.add('opacity-50');
+            }
+        }
+
+        // --- Data Initialization ---
+        async function initData() {
+            const startT = performance.now();
+            try {
+                // Fetch Knowledge Base, Symptoms, Categories, Diseases, and Presets concurrently
+                const [kbRes, symRes, catRes, disRes, presetRes] = await Promise.all([
+                    fetch('/api/knowledge-base'),
+                    fetch('/api/symptoms'),
+                    fetch('/api/symptoms/categorized'),
+                    fetch('/api/diseases'),
+                    fetch('/api/case-presets')
+                ]);
+
+                const [kbData, symData, catData, disData, presetData] = await Promise.all([
+                    kbRes.json(),
+                    symRes.json(),
+                    catRes.json(),
+                    disRes.json(),
+                    presetRes.json()
+                ]);
+
+                ALL_RULES = kbData.rules || [];
+                ALL_SYMPTOMS = symData.symptoms || [];
+                CATEGORIZED_SYMPTOMS = catData.categories || {};
+                ALL_DISEASES = disData.diseases || [];
+                CASE_PRESETS = presetData.presets || [];
+
+                // Update Telemetry Counters
+                const telRules = document.getElementById('telemetry-rules');
+                if (telRules) telRules.innerText = `${ALL_RULES.length} Verified Rules`;
+
+                const totalSymCount = document.getElementById('total-symptoms-count');
+                if (totalSymCount) totalSymCount.innerText = ALL_SYMPTOMS.length;
+
+                // Render UI Components
+                populateDiseasesDropdown();
+                renderCasePresets();
+                renderSymptomsGrid();
+                renderKnowledgeBase(ALL_RULES);
+                initDecisionGraph();
+
+                const endT = performance.now();
+                const telLat = document.getElementById('telemetry-latency');
+                if (telLat) telLat.innerText = `${(endT - startT).toFixed(1)} ms`;
+            } catch (e) {
+                console.error("Initialization error:", e);
+            }
+        }
+
+        // --- Render Case Presets (Examiner Demos) ---
+        function renderCasePresets() {
+            const container = document.getElementById('case-presets-grid');
+            if (!CASE_PRESETS || CASE_PRESETS.length === 0) return;
+
+            container.innerHTML = CASE_PRESETS.map((p, idx) => {
+                const tagStyle = p.tag === 'EMERGENCY' ? 'bg-rose-500/15 text-rose-300 border-rose-500/30' :
+                                 p.tag === 'URGENT' ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' :
+                                 'bg-sky-500/15 text-sky-300 border-sky-500/30';
+                return `
+                    <div onclick="applyCasePreset('${p.id}')" class="glass-panel glass-panel-interactive p-3 flex flex-col justify-between gap-2 cursor-pointer select-none">
+                        <div class="flex items-center justify-between">
+                            <span class="badge-status ${tagStyle} border">${p.tag}</span>
+                            <span class="text-[10px] font-mono text-slate-500">Case 0${idx+1}</span>
+                        </div>
+                        <div class="font-medium text-xs text-white leading-snug">${p.title}</div>
+                        <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-1.5 border-t border-white/[0.06]">
+                            <span>${p.symptoms.length} Symptoms</span>
+                            <span class="text-sky-400 font-semibold flex items-center gap-0.5">Run →</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function applyCasePreset(presetId) {
+            playSound('click');
+            const preset = CASE_PRESETS.find(p => p.id === presetId);
+            if (!preset) return;
+
+            // Apply Patient Vitals
+            if (preset.patient) {
+                document.getElementById('patient-age').value = preset.patient.age || 45;
+                document.getElementById('patient-gender').value = preset.patient.gender || 'Male';
+                document.getElementById('patient-bp').value = preset.patient.bp || '120/80';
+                document.getElementById('patient-hr').value = preset.patient.hr || 75;
+                document.getElementById('patient-spo2').value = preset.patient.spo2 || 98;
+                document.getElementById('patient-temp').value = preset.patient.temp || 37.0;
+            }
+
+            // Populate symptoms
+            document.querySelectorAll('input[name="symptom"]').forEach(cb => {
+                cb.checked = preset.symptoms.includes(cb.value);
+            });
+            updateSelectedCount();
+
+            // Set Mode & Target
+            setInferenceMode(preset.mode || 'forward');
+            if (preset.target_disease) {
+                const select = document.getElementById('target-disease-select');
+                for (let i = 0; i < select.options.length; i++) {
+                    if (select.options[i].value.toLowerCase() === preset.target_disease.toLowerCase()) {
+                        select.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            evaluateTriage();
+            triggerInference();
+        }
+
+        // --- Render Symptoms Grid ---
+        function renderSymptomsGrid() {
+            const grid = document.getElementById('symptoms-grid');
+            let filtered = ALL_SYMPTOMS;
+
+            // Category filter
+            if (currentCategoryFilter !== 'ALL' && CATEGORIZED_SYMPTOMS[currentCategoryFilter]) {
+                const allowed = new Set(CATEGORIZED_SYMPTOMS[currentCategoryFilter]);
+                filtered = filtered.filter(s => allowed.has(s));
+            }
+
+            // Search filter
+            const searchQ = (document.getElementById('symptom-search')?.value || '').toLowerCase().trim();
+            if (searchQ) {
+                filtered = filtered.filter(s => s.toLowerCase().includes(searchQ) || s.replace(/_/g, ' ').includes(searchQ));
+            }
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-2 py-8 text-center text-slate-500 font-mono text-xs">No clinical symptoms matched your filter.</div>`;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(s => {
+                const isChecked = isSymptomChecked(s);
+                return `
+                    <label class="flex items-center gap-2.5 p-2 rounded-lg surface-subtle hover:border-sky-500/40 cursor-pointer transition select-none group">
+                        <input type="checkbox" name="symptom" value="${s}" ${isChecked ? 'checked' : ''} onchange="onSymptomToggled()" class="accent-sky-500 w-3.5 h-3.5 rounded cursor-pointer">
+                        <span class="text-xs font-mono text-slate-300 capitalize group-hover:text-white transition">${s.replace(/_/g, ' ')}</span>
+                    </label>
+                `;
+            }).join('');
+        }
+
+        function isSymptomChecked(symptom) {
+            const existing = document.querySelector(`input[name="symptom"][value="${symptom}"]`);
+            return existing ? existing.checked : false;
+        }
+
+        function onSymptomToggled() {
+            playSound('click');
+            updateSelectedCount();
+            evaluateTriage();
+        }
+
+        function updateSelectedCount() {
+            const selected = document.querySelectorAll('input[name="symptom"]:checked');
+            document.getElementById('selected-count').innerText = selected.length;
+        }
+
+        function filterSymptoms() {
+            renderSymptomsGrid();
+        }
+
+        function filterByCategory(category) {
+            playSound('click');
+            currentCategoryFilter = category;
+            const buttons = document.querySelectorAll('#system-category-pills button');
+            buttons.forEach(btn => {
+                if (btn.innerText.includes(category) || (category === 'ALL' && btn.innerText.includes('All Systems'))) {
+                    btn.className = "px-2.5 py-1 rounded-md bg-sky-500/15 text-sky-300 border border-sky-500/30 font-medium";
+                } else {
+                    btn.className = "px-2.5 py-1 rounded-md surface-subtle text-slate-400 hover:text-slate-200";
+                }
+            });
+            renderSymptomsGrid();
+        }
+
+        function selectAllSymptoms() {
+            playSound('click');
+            document.querySelectorAll('input[name="symptom"]').forEach(cb => cb.checked = true);
+            updateSelectedCount();
+            evaluateTriage();
+        }
+
+        function clearAllSymptoms() {
+            playSound('click');
+            document.querySelectorAll('input[name="symptom"]').forEach(cb => cb.checked = false);
+            updateSelectedCount();
+            evaluateTriage();
+            document.getElementById('results-idle-state').classList.remove('hidden');
+            document.getElementById('results-active-state').classList.add('hidden');
+            document.getElementById('audit-trace-box').innerHTML = `<div class="text-slate-500">[Working Memory cleared.]</div>`;
+            initDecisionGraph([]);
+        }
+
+        // --- Target Diseases Dropdown ---
+        function populateDiseasesDropdown() {
+            const select = document.getElementById('target-disease-select');
+            if (!ALL_DISEASES || ALL_DISEASES.length === 0) return;
+
+            select.innerHTML = ALL_DISEASES.map(d => {
+                const diseaseName = typeof d === 'string' ? d : d.name;
+                const severityTag = d.severity === 'CRITICAL EMERGENCY' ? ' [EMERGENCY]' : '';
+                return `<option value="${diseaseName}">${diseaseName}${severityTag}</option>`;
+            }).join('');
+        }
+
+        // --- Mode Switcher ---
+        function setInferenceMode(mode) {
+            playSound('click');
+            currentMode = mode;
+            const tabForward = document.getElementById('tab-forward');
+            const tabBackward = document.getElementById('tab-backward');
+            const backwardContainer = document.getElementById('backward-goal-container');
+            const btnText = document.getElementById('btn-text');
+
+            if (mode === 'forward') {
+                tabForward.className = "p-3 rounded-lg border flex flex-col gap-0.5 text-left transition bg-sky-500/10 border-sky-500/35 text-sky-300";
+                tabBackward.className = "p-3 rounded-lg border flex flex-col gap-0.5 text-left transition surface-subtle text-slate-400 hover:border-white/20";
+                backwardContainer.classList.add('hidden');
+                btnText.innerText = "Execute Forward Chaining Inference";
+                document.getElementById('result-mode-tag').innerText = "FORWARD REASONING";
+            } else {
+                tabBackward.className = "p-3 rounded-lg border flex flex-col gap-0.5 text-left transition bg-sky-500/10 border-sky-500/35 text-sky-300";
+                tabForward.className = "p-3 rounded-lg border flex flex-col gap-0.5 text-left transition surface-subtle text-slate-400 hover:border-white/20";
+                backwardContainer.classList.remove('hidden');
+                btnText.innerText = "Prove Hypothesis via Backward Chaining";
+                document.getElementById('result-mode-tag').innerText = "BACKWARD GOAL PROVER";
+            }
+        }
+
+        // --- Clinical Vitals Surveillance Triage ---
+        async function evaluateTriage() {
+            const vitals = {
+                age: document.getElementById('patient-age')?.value || 45,
+                gender: document.getElementById('patient-gender')?.value || 'Male',
+                bp: document.getElementById('patient-bp')?.value || '120/80',
+                hr: document.getElementById('patient-hr')?.value || 75,
+                spo2: document.getElementById('patient-spo2')?.value || 98,
+                temp: document.getElementById('patient-temp')?.value || 37.0
+            };
+            const symptoms = Array.from(document.querySelectorAll('input[name="symptom"]:checked')).map(cb => cb.value);
+
+            try {
+                const res = await fetch('/api/triage', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ vitals: vitals, symptoms: symptoms })
+                });
+                const data = await res.json();
+                const badge = document.getElementById('triage-status-badge');
+                const alertBox = document.getElementById('triage-alert-box');
+                const alertText = document.getElementById('triage-alert-text');
+
+                if (data.triage_level === 'CRITICAL EMERGENCY') {
+                    badge.className = "px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-500/15 border border-rose-500/30 text-rose-300 text-center";
+                    badge.innerText = "CRITICAL EMERGENCY";
+                    alertBox.classList.remove('hidden');
+                    alertText.innerText = data.red_flags.join(' | ') || "Critical physiological decompensation detected.";
+                    playSound('alert');
+                } else if (data.triage_level === 'URGENT') {
+                    badge.className = "px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-500/15 border border-amber-500/30 text-amber-300 text-center";
+                    badge.innerText = "URGENT ATTENTION";
+                    alertBox.classList.remove('hidden');
+                    alertText.innerText = data.red_flags.join(' | ') || "High-risk parameters observed.";
+                } else {
+                    badge.className = "px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-center";
+                    badge.innerText = "NORMAL VITALS";
+                    alertBox.classList.add('hidden');
+                }
+            } catch (e) {
+                console.error("Triage evaluation failed:", e);
+            }
+        }
+
+        // --- INFERENCE CONTROLLER ---
+        async function triggerInference() {
+            const selectedSymptoms = Array.from(document.querySelectorAll('input[name="symptom"]:checked')).map(cb => cb.value);
+
+            if (selectedSymptoms.length === 0 && currentMode === 'forward') {
+                alert('Clinical Notice: Please select at least one active patient symptom.');
+                return;
+            }
+
+            const startTime = performance.now();
+            document.getElementById('results-idle-state').classList.add('hidden');
+            document.getElementById('results-active-state').classList.remove('hidden');
+
+            try {
+                let endpoint = currentMode === 'forward' ? '/api/forward-chain' : '/api/backward-chain';
+                let payload = {};
+
+                if (currentMode === 'forward') {
+                    payload = { symptoms: selectedSymptoms };
+                } else {
+                    const target = document.getElementById('target-disease-select').value;
+                    payload = { target: target, symptoms: selectedSymptoms };
+                }
+
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+                const latency = (performance.now() - startTime).toFixed(1);
+                document.getElementById('telemetry-latency').innerText = `${latency} ms`;
+
+                lastInferenceResults = { mode: currentMode, data: data };
+                playSound('fire');
+
+                if (currentMode === 'forward') {
+                    renderForwardResults(data, selectedSymptoms);
+                } else {
+                    renderBackwardResults(data, selectedSymptoms);
+                }
+
+                const trace = currentMode === 'forward' ?
+                    (data.results && data.results[0] ? data.results[0].reasoning_trace : ["No rule fired"]) :
+                    (data.result ? data.result.reasoning_trace : []);
+                renderAuditTrace(trace);
+
+            } catch (e) {
+                console.error("Inference execution failed:", e);
+                alert("Inference execution failed: " + e.message);
+            }
+        }
+
+        // --- Render Forward Chaining Results ---
+        function renderForwardResults(data, selectedSymptoms) {
+            const results = data.results || [];
+            const primaryBox = document.getElementById('primary-diag-card');
+            const diffsContainer = document.getElementById('differentials-list');
+
+            if (results.length === 0) {
+                primaryBox.className = "p-3.5 rounded-lg surface-subtle border-amber-500/30 flex flex-col gap-2.5";
+                document.getElementById('diag-rank-label').innerText = "INSUFFICIENT CLINICAL EVIDENCE";
+                document.getElementById('diag-title').innerText = "No Matching Production Rules";
+                document.getElementById('diag-rule-id').innerText = "RULE: N/A";
+                document.getElementById('diag-icd').innerText = "ICD-10: R69";
+                document.getElementById('diag-category').innerText = "Inconclusive";
+                document.getElementById('diag-severity-badge').className = "badge-status bg-amber-500/10 text-amber-300 border border-amber-500/20";
+                document.getElementById('diag-severity-badge').innerText = "INDETERMINATE";
+                document.getElementById('diag-match-percent').innerText = "0.0%";
+                document.getElementById('diag-match-bar').style.width = "0%";
+                document.getElementById('diag-satisfied-chips').innerHTML = selectedSymptoms.map(s => `<span class="px-2 py-0.5 rounded surface-subtle text-slate-300">${s}</span>`).join('');
+                document.getElementById('diag-missing-chips').innerHTML = `<span class="text-slate-400">Additional evidence needed to complete rule premises.</span>`;
+                document.getElementById('diag-tests').innerText = "Broad diagnostic panel (Complete Blood Count, Metabolic Panel, Vital Sign Trend Monitoring).";
+                document.getElementById('diag-treatment').innerText = "Supportive observation and symptomatic relief pending further clinical symptoms.";
+                diffsContainer.innerHTML = `<div class="text-slate-500 text-xs font-mono">No differential candidates identified.</div>`;
+                updateDecisionGraph(selectedSymptoms, []);
+                return;
+            }
+
+            const top = results[0];
+            const isFull = top.is_full_match;
+            const sevColor = top.severity === 'CRITICAL EMERGENCY' ? 'bg-rose-500/10 text-rose-300 border-rose-500/30' :
+                             top.severity === 'URGENT' ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' :
+                             'bg-emerald-500/10 text-emerald-300 border-emerald-500/30';
+
+            primaryBox.className = isFull ?
+                "p-3.5 rounded-lg surface-subtle border-sky-500/40 flex flex-col gap-2.5" :
+                "p-3.5 rounded-lg surface-subtle border-amber-500/40 flex flex-col gap-2.5";
+
+            document.getElementById('diag-rank-label').innerText = isFull ? "PRIMARY VERIFIED CONCLUSION" : "TOP DIFFERENTIAL HYPOTHESIS (PARTIAL MATCH)";
+            document.getElementById('diag-title').innerText = top.diagnosis;
+            document.getElementById('diag-rule-id').innerText = `RULE ${top.rule_id}`;
+            document.getElementById('diag-icd').innerText = `ICD-10: ${top.icd10 || 'N/A'}`;
+            document.getElementById('diag-category').innerText = top.category || 'General';
+
+            const sevBadge = document.getElementById('diag-severity-badge');
+            sevBadge.className = `badge-status border ${sevColor}`;
+            sevBadge.innerText = top.severity || 'MODERATE';
+
+            document.getElementById('diag-match-percent').innerText = `${top.match_ratio}% (${top.match_count} / ${top.total_required})`;
+            document.getElementById('diag-match-bar').style.width = `${top.match_ratio}%`;
+
+            // Satisfied vs Missing
+            document.getElementById('diag-satisfied-chips').innerHTML = (top.satisfied_symptoms || []).map(s =>
+                `<span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 capitalize font-medium">${s.replace(/_/g, ' ')}</span>`
+            ).join('') || `<span class="text-slate-400">None</span>`;
+
+            document.getElementById('diag-missing-chips').innerHTML = (top.missing_symptoms || []).length > 0 ?
+                (top.missing_symptoms || []).map(s => `<span class="px-2 py-0.5 rounded bg-rose-500/10 text-rose-300 border border-rose-500/20 capitalize">${s.replace(/_/g, ' ')}</span>`).join('') :
+                `<span class="text-emerald-400 font-medium">None — All Antecedent Premises Fully Satisfied</span>`;
+
+            // Diagnostic Workup & Protocol
+            document.getElementById('diag-tests').innerText = top.tests_recommended || "Clinical assessment.";
+            document.getElementById('diag-treatment').innerText = top.treatment || "Standard therapeutic care.";
+
+            // Secondary Differentials List
+            const secondary = results.slice(1, 4);
+            if (secondary.length > 0) {
+                diffsContainer.innerHTML = secondary.map(sec => `
+                    <div class="p-2 rounded-md surface-subtle flex items-center justify-between text-xs font-mono">
+                        <div>
+                            <span class="font-medium text-white">${sec.diagnosis}</span>
+                            <span class="text-[10px] text-slate-500 ml-1.5">(${sec.rule_id})</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-slate-400">${sec.match_ratio}%</span>
+                            <span class="w-1.5 h-1.5 rounded-full ${sec.is_full_match ? 'bg-emerald-400' : 'bg-amber-400'}"></span>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                diffsContainer.innerHTML = `<div class="text-slate-500 text-xs font-mono">No secondary differential candidates.</div>`;
+            }
+
+            updateDecisionGraph(selectedSymptoms, results);
+        }
+
+        // --- Render Backward Chaining Results ---
+        function renderBackwardResults(data, selectedSymptoms) {
+            const res = data.result || {};
+            const isVerified = res.matched;
+            const primaryBox = document.getElementById('primary-diag-card');
+            const diffsContainer = document.getElementById('differentials-list');
+
+            const sevColor = isVerified ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' : 'bg-amber-500/10 text-amber-300 border-amber-500/30';
+
+            primaryBox.className = isVerified ?
+                "p-3.5 rounded-lg surface-subtle border-sky-500/40 flex flex-col gap-2.5" :
+                "p-3.5 rounded-lg surface-subtle border-amber-500/40 flex flex-col gap-2.5";
+
+            document.getElementById('diag-rank-label').innerText = isVerified ? "HYPOTHESIS GOAL PROVEN" : "HYPOTHESIS UNVERIFIED (INSUFFICIENT CRITERIA)";
+            document.getElementById('diag-title').innerText = res.target || res.diagnosis;
+            document.getElementById('diag-rule-id').innerText = `RULE ${res.rule_id || 'N/A'}`;
+            document.getElementById('diag-icd').innerText = `ICD-10: ${res.icd10 || 'N/A'}`;
+            document.getElementById('diag-category').innerText = res.category || 'General';
+
+            const sevBadge = document.getElementById('diag-severity-badge');
+            sevBadge.className = `badge-status border ${sevColor}`;
+            sevBadge.innerText = isVerified ? "VERIFIED GOAL" : "UNPROVEN";
+
+            const satCount = (res.satisfied_symptoms || []).length;
+            const totCount = res.total_required || (satCount + (res.missing_symptoms || []).length);
+            const ratio = totCount > 0 ? Math.round((satCount / totCount) * 100) : 0;
+
+            document.getElementById('diag-match-percent').innerText = `${ratio}% (${satCount} / ${totCount})`;
+            document.getElementById('diag-match-bar').style.width = `${ratio}%`;
+
+            // Satisfied Criteria
+            document.getElementById('diag-satisfied-chips').innerHTML = (res.satisfied_symptoms || []).map(s =>
+                `<span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 capitalize font-medium">${s.replace(/_/g, ' ')}</span>`
+            ).join('') || `<span class="text-slate-400">None observed</span>`;
+
+            // Missing Criteria
+            document.getElementById('diag-missing-chips').innerHTML = (res.missing_symptoms || []).length > 0 ?
+                (res.missing_symptoms || []).map(s => `<span class="px-2 py-0.5 rounded bg-rose-500/10 text-rose-300 border border-rose-500/20 capitalize">${s.replace(/_/g, ' ')}</span>`).join('') :
+                `<span class="text-emerald-400 font-medium">None — Hypothesis verified by complete evidence</span>`;
+
+            document.getElementById('diag-tests').innerText = res.tests_recommended || "Standard diagnostic testing.";
+            document.getElementById('diag-treatment').innerText = res.treatment || "Consult physician for care protocol.";
+
+            // Backward Inquiries
+            if (res.recommended_inquiry && res.recommended_inquiry.length > 0) {
+                diffsContainer.innerHTML = res.recommended_inquiry.map(inq => `
+                    <div class="p-2 rounded-md surface-subtle border-sky-500/20 text-sky-200 text-xs font-mono flex items-center gap-2">
+                        <span class="text-sky-400">💬</span> <span>${inq}</span>
+                    </div>
+                `).join('');
+            } else {
+                diffsContainer.innerHTML = `<div class="text-emerald-400 text-xs font-mono">No further inquiry required. Hypothesis fully satisfied.</div>`;
+            }
+
+            updateDecisionGraph(selectedSymptoms, [res]);
+        }
+
+        // --- Render Audit Trace ---
+        function renderAuditTrace(traceLines) {
+            const container = document.getElementById('audit-trace-box');
+            if (!traceLines || traceLines.length === 0) {
+                container.innerHTML = `<div class="text-slate-500">[No inference trace recorded.]</div>`;
+                return;
+            }
+
+            container.innerHTML = traceLines.map((line) => {
+                let color = "text-slate-300";
+                if (line.includes("FIRED") || line.includes("VERIFIED") || line.includes("PROVEN")) {
+                    color = "text-emerald-300 font-medium";
+                } else if (line.includes("Step") || line.includes("Assertion")) {
+                    color = "text-sky-300";
+                } else if (line.includes("Missing") || line.includes("Unsatisfied") || line.includes("UNPROVEN")) {
+                    color = "text-amber-300";
+                }
+                return `<div class="${color}">${line}</div>`;
+            }).join('');
+        }
+
+        function copyAuditLog() {
+            const text = document.getElementById('audit-trace-box').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Symbolic Audit Log copied to clipboard!");
+            });
+        }
+
+        // --- SVG Decision Graph ---
+        function initDecisionGraph() {
+            const svg = document.getElementById('network-svg');
+            svg.innerHTML = `
+                <!-- Initial Clean Idle Diagram -->
+                <circle cx="80" cy="50" r="12" fill="rgba(30, 41, 59, 0.6)" stroke="#475569" stroke-width="1.5" />
+                <text x="80" y="54" fill="#94A3B8" font-size="9" font-family="monospace" text-anchor="middle">S01</text>
+                <circle cx="80" cy="100" r="12" fill="rgba(30, 41, 59, 0.6)" stroke="#475569" stroke-width="1.5" />
+                <text x="80" y="104" fill="#94A3B8" font-size="9" font-family="monospace" text-anchor="middle">S02</text>
+                <circle cx="80" cy="150" r="12" fill="rgba(30, 41, 59, 0.6)" stroke="#475569" stroke-width="1.5" />
+                <text x="80" y="154" fill="#94A3B8" font-size="9" font-family="monospace" text-anchor="middle">S03</text>
+
+                <rect x="250" y="40" width="100" height="28" rx="6" fill="rgba(15, 23, 42, 0.7)" stroke="#334155" stroke-width="1.2" />
+                <text x="300" y="58" fill="#94A3B8" font-size="10" font-family="monospace" text-anchor="middle">Rule R01</text>
+                <rect x="250" y="86" width="100" height="28" rx="6" fill="rgba(15, 23, 42, 0.7)" stroke="#334155" stroke-width="1.2" />
+                <text x="300" y="104" fill="#94A3B8" font-size="10" font-family="monospace" text-anchor="middle">Rule R02</text>
+                <rect x="250" y="132" width="100" height="28" rx="6" fill="rgba(15, 23, 42, 0.7)" stroke="#334155" stroke-width="1.2" />
+                <text x="300" y="150" fill="#94A3B8" font-size="10" font-family="monospace" text-anchor="middle">Rule R03</text>
+
+                <circle cx="500" cy="100" r="20" fill="rgba(15, 23, 42, 0.7)" stroke="#334155" stroke-width="1.5" />
+                <text x="500" y="104" fill="#94A3B8" font-size="9" font-family="monospace" text-anchor="middle">Outcome</text>
+
+                <line x1="92" y1="50" x2="250" y2="54" stroke="rgba(255, 255, 255, 0.1)" stroke-width="1" stroke-dasharray="3" />
+                <line x1="92" y1="100" x2="250" y2="100" stroke="rgba(255, 255, 255, 0.1)" stroke-width="1" stroke-dasharray="3" />
+                <line x1="92" y1="150" x2="250" y2="146" stroke="rgba(255, 255, 255, 0.1)" stroke-width="1" stroke-dasharray="3" />
+                <line x1="350" y1="100" x2="480" y2="100" stroke="rgba(255, 255, 255, 0.1)" stroke-width="1" stroke-dasharray="3" />
+            `;
+        }
+
+        function updateDecisionGraph(symptoms, results) {
+            const svg = document.getElementById('network-svg');
+            const status = document.getElementById('graph-status');
+
+            if (!results || results.length === 0) {
+                initDecisionGraph();
+                status.innerText = "No Rules Fired";
+                status.className = "text-[11px] font-mono text-amber-400";
+                return;
+            }
+
+            const top = results[0];
+            const ruleId = top.rule_id || top.id || "R01";
+            const diagName = (top.diagnosis || "Outcome").slice(0, 13);
+
+            status.innerText = `Active: ${ruleId} -> ${diagName}`;
+            status.className = "text-[11px] font-mono text-sky-400 font-medium";
+
+            svg.innerHTML = `
+                <g>
+                    <circle cx="80" cy="40" r="14" fill="rgba(14, 165, 233, 0.18)" stroke="#0EA5E9" stroke-width="2" />
+                    <text x="80" y="44" fill="#38BDF8" font-size="9" font-family="monospace" text-anchor="middle" font-weight="bold">S1</text>
+
+                    <circle cx="80" cy="90" r="14" fill="rgba(14, 165, 233, 0.18)" stroke="#0EA5E9" stroke-width="2" />
+                    <text x="80" y="94" fill="#38BDF8" font-size="9" font-family="monospace" text-anchor="middle" font-weight="bold">S2</text>
+
+                    <circle cx="80" cy="140" r="14" fill="rgba(14, 165, 233, 0.18)" stroke="#0EA5E9" stroke-width="2" />
+                    <text x="80" y="144" fill="#38BDF8" font-size="9" font-family="monospace" text-anchor="middle" font-weight="bold">S3</text>
+                </g>
+
+                <line x1="94" y1="40" x2="245" y2="90" stroke="#0EA5E9" stroke-width="2" />
+                <line x1="94" y1="90" x2="245" y2="90" stroke="#0EA5E9" stroke-width="2" />
+                <line x1="94" y1="140" x2="245" y2="90" stroke="#0EA5E9" stroke-width="2" />
+
+                <g>
+                    <rect x="245" y="70" width="120" height="38" rx="8" fill="rgba(15, 23, 42, 0.85)" stroke="#0EA5E9" stroke-width="2" />
+                    <text x="305" y="87" fill="#F8FAFC" font-size="11" font-family="monospace" text-anchor="middle" font-weight="600">Rule ${ruleId}</text>
+                    <text x="305" y="100" fill="#38BDF8" font-size="9" font-family="monospace" text-anchor="middle">${top.match_ratio}% Matched</text>
+                </g>
+
+                <line x1="365" y1="89" x2="470" y2="89" stroke="#14B8A6" stroke-width="2.5" />
+
+                <g>
+                    <circle cx="500" cy="89" r="28" fill="rgba(20, 184, 166, 0.18)" stroke="#14B8A6" stroke-width="2.5" />
+                    <text x="500" y="93" fill="#2DD4BF" font-size="10" font-family="monospace" text-anchor="middle" font-weight="600">${diagName}</text>
+                </g>
+            `;
+        }
+
+        // --- Render Knowledge Base (R01 - R12) ---
+        function renderKnowledgeBase(rules) {
+            const container = document.getElementById('kb-rules-grid');
+            if (!rules || rules.length === 0) {
+                container.innerHTML = `<div class="col-span-3 text-center text-slate-500 font-mono py-6">No production rules loaded.</div>`;
+                return;
+            }
+
+            container.innerHTML = rules.map(r => `
+                <div class="glass-panel p-3.5 flex flex-col justify-between gap-2.5">
+                    <div class="flex items-center justify-between border-b border-white/[0.08] pb-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-mono font-semibold text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/20">${r.id}</span>
+                            <span class="text-[10px] font-mono text-slate-400">ICD: ${r.icd10 || 'N/A'}</span>
+                        </div>
+                        <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.05] text-slate-300 font-medium">${r.category}</span>
+                    </div>
+
+                    <div class="flex flex-col gap-1 font-mono text-xs">
+                        <span class="text-[10px] text-slate-500 font-semibold uppercase">IF Symptoms:</span>
+                        <div class="flex flex-wrap gap-1">
+                            ${(r.symptoms || []).map(s => `<span class="surface-subtle text-slate-300 px-1.5 py-0.5 rounded text-[10px] capitalize">${s.replace(/_/g, ' ')}</span>`).join('')}
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-0.5 pt-1.5 border-t border-white/[0.08] font-mono text-xs">
+                        <span class="text-[10px] text-sky-400 font-semibold uppercase">THEN Conclusion:</span>
+                        <span class="text-xs font-semibold text-white">${r.diagnosis}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function searchKnowledgeBase() {
+            const q = document.getElementById('kb-search').value.toLowerCase().trim();
+            const filtered = ALL_RULES.filter(r =>
+                r.id.toLowerCase().includes(q) ||
+                r.diagnosis.toLowerCase().includes(q) ||
+                (r.icd10 || '').toLowerCase().includes(q) ||
+                (r.symptoms || []).some(s => s.toLowerCase().includes(q))
+            );
+            renderKnowledgeBase(filtered);
+        }
+
+        // --- Run Validation Suite ---
+        async function runValidationSuite() {
+            playSound('fire');
+            const tbody = document.getElementById('test-table-body');
+            tbody.innerHTML = `<tr><td colspan="6" class="py-5 text-center text-sky-400 font-mono text-xs animate-pulse">Executing automated regression test suite against inference core...</td></tr>`;
+
+            try {
+                const res = await fetch('/api/test', { method: 'POST' });
+                const data = await res.json();
+                const tests = data.test_results || [];
+
+                tbody.innerHTML = tests.map((t, idx) => `
+                    <tr class="hover:bg-white/[0.02] transition">
+                        <td class="py-2.5 px-3 font-semibold text-sky-400">TEST-0${idx+1}</td>
+                        <td class="py-2.5 px-3 uppercase text-slate-300">${t.strategy}</td>
+                        <td class="py-2.5 px-3 text-[11px] text-slate-400 font-mono max-w-xs truncate" title="${t.input}">${t.input}</td>
+                        <td class="py-2.5 px-3 text-slate-300 font-medium">${t.expected}</td>
+                        <td class="py-2.5 px-3 text-sky-300 font-mono text-[11px]">${t.actual}</td>
+                        <td class="py-2.5 px-3">
+                            <span class="badge-status ${t.status === 'PASS' ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/15 text-rose-300 border border-rose-500/30'}">${t.status}</span>
+                        </td>
+                    </tr>
+                `).join('');
+
+                alert(`Validation Suite Complete: ${data.passed_tests} / ${data.total_tests} Tests Passed (${data.success_rate} Reliability)!`);
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-rose-400 font-mono">Test execution failed: ${e.message}</td></tr>`;
+            }
+        }
+
+        // --- Trigger Clinical Report (Print Dialog) ---
+        function triggerPrintReport() {
+            playSound('click');
+            document.getElementById('print-date').innerText = new Date().toLocaleString();
+
+            const vitals = `Age: ${document.getElementById('patient-age')?.value || '45'} | Sex: ${document.getElementById('patient-gender')?.value || 'M'} | BP: ${document.getElementById('patient-bp')?.value || '120/80'} mmHg | HR: ${document.getElementById('patient-hr')?.value || '75'} BPM | SpO2: ${document.getElementById('patient-spo2')?.value || '98'}% | Temp: ${document.getElementById('patient-temp')?.value || '37.0'}°C`;
+            document.getElementById('print-vitals').innerText = vitals;
+
+            const symptoms = Array.from(document.querySelectorAll('input[name="symptom"]:checked')).map(cb => cb.value.replace(/_/g, ' '));
+            document.getElementById('print-symptoms').innerText = symptoms.length > 0 ? symptoms.join(', ') : 'None selected';
+
+            if (lastInferenceResults && lastInferenceResults.data) {
+                if (lastInferenceResults.mode === 'forward') {
+                    const res = lastInferenceResults.data.results || [];
+                    document.getElementById('print-diagnoses').innerHTML = res.slice(0, 3).map((r, i) => `
+                        <p><strong>[Rank 0${i+1}] ${r.diagnosis}</strong> (Rule: ${r.rule_id}, ICD-10: ${r.icd10 || 'N/A'}, Severity: ${r.severity}, Match: ${r.match_ratio}%)<br>
+                        <em>Recommended Workup:</em> ${r.tests_recommended || 'N/A'}<br>
+                        <em>Clinical Management:</em> ${r.treatment || 'N/A'}</p>
+                    `).join('');
+                } else {
+                    const r = lastInferenceResults.data.result || {};
+                    document.getElementById('print-diagnoses').innerHTML = `
+                        <p><strong>[Hypothesis Prover] Target: ${r.target || r.diagnosis}</strong> (Status: ${r.matched ? 'GOAL VERIFIED' : 'UNVERIFIED'})<br>
+                        <em>Satisfied Observed Criteria:</em> ${(r.satisfied_symptoms || []).join(', ') || 'None'}<br>
+                        <em>Missing Criteria:</em> ${(r.missing_symptoms || []).join(', ') || 'None'}<br>
+                        <em>Clinical Management:</em> ${r.treatment || 'N/A'}</p>
+                    `;
+                }
+            } else {
+                document.getElementById('print-diagnoses').innerHTML = '<p>No inference results recorded prior to report request.</p>';
+            }
+
+            const traceText = document.getElementById('audit-trace-box').innerText;
+            document.getElementById('print-audit-trace').innerText = traceText;
+
+            window.print();
+        }
+
+        // --- Wallpaper Atmosphere Switcher ---
+        const WALLPAPERS = [
+            { url: '/images/medical-bg.jpg', name: 'Neural Hologram' },
+            { url: '/images/hologram_bg2.jpg', name: 'Clinical Scan' }
+        ];
+        let currentWallpaperIndex = 0;
+
+        function switchWallpaper() {
+            playSound('click');
+            currentWallpaperIndex = (currentWallpaperIndex + 1) % WALLPAPERS.length;
+            const wp = WALLPAPERS[currentWallpaperIndex];
+            
+            document.documentElement.style.setProperty('--app-bg-url', `url('${wp.url}')`);
+
+            const heroImg = document.getElementById('hero-model-img');
+            if (heroImg) {
+                heroImg.src = wp.url;
+            }
+            const label = document.getElementById('wallpaper-label');
+            if (label) {
+                label.innerText = wp.name;
+            }
+        }
+
+        // --- Viva Modal ---
+        function openVivaModal() {
+            playSound('click');
+            const modal = document.getElementById('viva-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+                modal.classList.add('active');
+            }
+        }
+
+        function closeVivaModal() {
+            const modal = document.getElementById('viva-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                modal.classList.remove('active');
+            }
+        }
+
+        // --- Keyboard Shortcuts ---
+        window.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                triggerInference();
+            } else if (e.key === 'Escape') {
+                closeVivaModal();
+            }
+        });
+
+        // Auto-initialize immediately and safely across all browsers
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initData);
+        } else {
+            initData();
+        }
+    </script>
+    </div> <!-- /#app-shell -->
+</body>
+</html>
